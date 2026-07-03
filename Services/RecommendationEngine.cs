@@ -21,8 +21,6 @@ public class RecommendationEngine
     private readonly HealthService _health;
     private readonly ILogger<RecommendationEngine> _logger;
 
-    private static readonly TimeSpan ResultCacheTtl = TimeSpan.FromMinutes(3);
-
     private readonly ConcurrentDictionary<Guid, UserProfile> _profiles = new();
     private readonly ConcurrentDictionary<Guid, IReadOnlyList<string>> _peopleCache = new();
     private readonly ConcurrentDictionary<Guid, CacheEntry<IReadOnlyList<BaseItem>>> _poolCache = new();
@@ -52,7 +50,9 @@ public class RecommendationEngine
     }
 
     /// <summary>
-    /// Rebuilds preference profiles for every user. Never throws.
+    /// Rebuilds preference profiles for every user and proactively re-warms their
+    /// recommendation caches, so the home screen always serves pre-computed data
+    /// instead of scoring the library on the user's own request. Never throws.
     /// </summary>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>A task representing the refresh.</returns>
@@ -64,6 +64,10 @@ public class RecommendationEngine
             _poolCache.Clear();
             _recommendationCache.Clear();
             _becauseYouWatchedCache.Clear();
+
+            var config = Plugin.Instance?.Configuration ?? new PluginConfiguration();
+            var itemsPerRow = Math.Clamp(config.ItemsPerRow, 1, 40);
+
             foreach (var user in _userManager.GetUsers().ToList())
             {
                 if (cancellationToken.IsCancellationRequested)
@@ -72,6 +76,12 @@ public class RecommendationEngine
                 }
 
                 BuildProfile(user);
+
+                // Warm the caches now, off the request path, so the first home-screen
+                // load after this refresh (or after server start) is never the one
+                // that pays for scoring the whole library.
+                GetRecommendations(user, 40);
+                GetBecauseYouWatched(user, 5, itemsPerRow);
             }
 
             _health.ReportSectionRefresh("RecommendationProfiles");
@@ -83,6 +93,22 @@ public class RecommendationEngine
         }
 
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Recommendation results are cached at least until the next scheduled profile
+    /// refresh (which proactively re-warms them), plus a buffer in case that
+    /// refresh is ever delayed or fails for a given user.
+    /// </summary>
+    private static TimeSpan GetResultCacheTtl()
+    {
+        var hours = Plugin.Instance?.Configuration.RecommendationRefreshHours ?? 6;
+        if (hours < 1)
+        {
+            hours = 6;
+        }
+
+        return TimeSpan.FromHours(hours + 1);
     }
 
     /// <summary>
@@ -153,7 +179,7 @@ public class RecommendationEngine
                 .ThenByDescending(s => s.Item.CommunityRating ?? 0)
                 .ToList();
 
-            _recommendationCache[user.Id] = new CacheEntry<IReadOnlyList<ScoredItem>>(now.Add(ResultCacheTtl), ordered);
+            _recommendationCache[user.Id] = new CacheEntry<IReadOnlyList<ScoredItem>>(now.Add(GetResultCacheTtl()), ordered);
             return ordered.Take(limit).ToList();
         }
         catch (Exception ex)
@@ -241,7 +267,7 @@ public class RecommendationEngine
             return rows;
         }
 
-        _becauseYouWatchedCache[cacheKey] = new CacheEntry<IReadOnlyList<(BaseItem, IReadOnlyList<BaseItem>)>>(now.Add(ResultCacheTtl), rows);
+        _becauseYouWatchedCache[cacheKey] = new CacheEntry<IReadOnlyList<(BaseItem, IReadOnlyList<BaseItem>)>>(now.Add(GetResultCacheTtl()), rows);
         return rows;
     }
 
@@ -297,7 +323,7 @@ public class RecommendationEngine
         }
 
         var pool = _analyser.GetUnwatchedPool(user);
-        _poolCache[user.Id] = new CacheEntry<IReadOnlyList<BaseItem>>(now.Add(ResultCacheTtl), pool);
+        _poolCache[user.Id] = new CacheEntry<IReadOnlyList<BaseItem>>(now.Add(GetResultCacheTtl()), pool);
         return pool;
     }
 
