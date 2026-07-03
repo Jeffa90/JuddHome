@@ -2,6 +2,16 @@
 
 All notable changes to the JuddHome plugin are documented here.
 
+## [1.0.1] — 2026-07-03
+
+### Fixed
+- JuddHome Settings modal (and any future `[hidden]`-toggled modal) would
+  never actually close: `.jh-modal { display: flex; }` overrode the browser's
+  default `[hidden] { display: none; }` rule regardless of specificity,
+  because author-stylesheet rules always beat user-agent defaults. Cancel and
+  Save appeared to do nothing and the full-screen modal blocked all other
+  interaction. Added an explicit `.jh-modal[hidden] { display: none; }` rule.
+
 ## [1.0.0] — 2026-07-03
 
 ### Added

@@ -449,6 +449,13 @@
     justify-content: center;
 }
 
+/* The browser's default [hidden] { display: none } rule is author-overridable
+   by any rule with a matching selector, so .jh-modal { display: flex } above
+   would otherwise defeat it and the modal would never actually close. */
+.jh-modal[hidden] {
+    display: none;
+}
+
 .jh-modal-backdrop {
     position: absolute;
     inset: 0;
