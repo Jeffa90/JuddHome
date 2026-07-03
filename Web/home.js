@@ -232,8 +232,9 @@
         playBtn.type = 'button';
         playBtn.addEventListener('click', function (e) {
             e.stopPropagation();
-            // Episodes play themselves; series resolve to next-up server-side.
-            playItem(type === 'Episode' ? id : (type === 'Series' ? id : id));
+            // Movies/episodes play themselves; series resolve to the next
+            // unwatched episode server-side via PlayTarget.
+            playItem(id);
         });
         hover.appendChild(playBtn);
         card.appendChild(hover);
