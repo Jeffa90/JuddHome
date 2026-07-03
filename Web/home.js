@@ -144,15 +144,23 @@
 
     function loadTemplate() {
         if (STATE.template) { return Promise.resolve(STATE.template); }
-        return fetch(apiClient().getUrl('JuddHome/Web/home.html'))
-            .then(function (r) {
-                if (!r.ok) { throw new Error('template ' + r.status); }
-                return r.text();
-            })
-            .then(function (html) {
-                STATE.template = html;
-                return html;
-            });
+        // XMLHttpRequest, not fetch() — old Tizen TV WebViews don't implement fetch.
+        return new Promise(function (resolve, reject) {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', apiClient().getUrl('JuddHome/Web/home.html'), true);
+            xhr.onload = function () {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    STATE.template = xhr.responseText;
+                    resolve(xhr.responseText);
+                } else {
+                    reject(new Error('template ' + xhr.status));
+                }
+            };
+            xhr.onerror = function () {
+                reject(new Error('template network error'));
+            };
+            xhr.send();
+        });
     }
 
     function ensureStyles() {

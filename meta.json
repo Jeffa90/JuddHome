@@ -1,7 +1,7 @@
 {
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "name": "JuddHome",
-  "version": "1.0.1.0",
+  "version": "1.0.2.0",
   "targetAbi": "10.11.11.0",
   "status": "Active",
   "autoUpdate": false

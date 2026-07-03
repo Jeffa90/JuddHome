@@ -21,8 +21,13 @@ public class RecommendationEngine
     private readonly HealthService _health;
     private readonly ILogger<RecommendationEngine> _logger;
 
+    private static readonly TimeSpan ResultCacheTtl = TimeSpan.FromMinutes(3);
+
     private readonly ConcurrentDictionary<Guid, UserProfile> _profiles = new();
     private readonly ConcurrentDictionary<Guid, IReadOnlyList<string>> _peopleCache = new();
+    private readonly ConcurrentDictionary<Guid, CacheEntry<IReadOnlyList<BaseItem>>> _poolCache = new();
+    private readonly ConcurrentDictionary<Guid, CacheEntry<IReadOnlyList<ScoredItem>>> _recommendationCache = new();
+    private readonly ConcurrentDictionary<(Guid UserId, int MaxRows, int ItemsPerRow), CacheEntry<IReadOnlyList<(BaseItem Seed, IReadOnlyList<BaseItem> Items)>>> _becauseYouWatchedCache = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RecommendationEngine"/> class.
@@ -56,6 +61,9 @@ public class RecommendationEngine
         try
         {
             _peopleCache.Clear();
+            _poolCache.Clear();
+            _recommendationCache.Clear();
+            _becauseYouWatchedCache.Clear();
             foreach (var user in _userManager.GetUsers().ToList())
             {
                 if (cancellationToken.IsCancellationRequested)
@@ -103,11 +111,17 @@ public class RecommendationEngine
     /// <returns>The scored recommendations, best first.</returns>
     public IReadOnlyList<ScoredItem> GetRecommendations(User user, int limit)
     {
+        var now = DateTimeOffset.UtcNow;
+        if (_recommendationCache.TryGetValue(user.Id, out var cached) && cached.ExpiresAt > now)
+        {
+            return cached.Value.Take(limit).ToList();
+        }
+
         try
         {
             var profile = GetProfile(user);
             var config = Plugin.Instance?.Configuration ?? new PluginConfiguration();
-            var pool = _analyser.GetUnwatchedPool(user);
+            var pool = GetUnwatchedPoolCached(user, now);
             var cutoff = DateTime.UtcNow.AddDays(-90);
 
             var scored = new List<ScoredItem>(pool.Count);
@@ -134,11 +148,13 @@ public class RecommendationEngine
                 }
             }
 
-            return scored
+            IReadOnlyList<ScoredItem> ordered = scored
                 .OrderByDescending(s => s.Score)
                 .ThenByDescending(s => s.Item.CommunityRating ?? 0)
-                .Take(limit)
                 .ToList();
+
+            _recommendationCache[user.Id] = new CacheEntry<IReadOnlyList<ScoredItem>>(now.Add(ResultCacheTtl), ordered);
+            return ordered.Take(limit).ToList();
         }
         catch (Exception ex)
         {
@@ -159,6 +175,13 @@ public class RecommendationEngine
     public IReadOnlyList<(BaseItem Seed, IReadOnlyList<BaseItem> Items)> GetBecauseYouWatched(
         User user, int maxRows, int itemsPerRow)
     {
+        var now = DateTimeOffset.UtcNow;
+        var cacheKey = (user.Id, maxRows, itemsPerRow);
+        if (_becauseYouWatchedCache.TryGetValue(cacheKey, out var cached) && cached.ExpiresAt > now)
+        {
+            return cached.Value;
+        }
+
         var rows = new List<(BaseItem, IReadOnlyList<BaseItem>)>();
         try
         {
@@ -168,7 +191,7 @@ public class RecommendationEngine
                 return rows;
             }
 
-            var pool = _analyser.GetUnwatchedPool(user);
+            var pool = GetUnwatchedPoolCached(user, now);
             var usedSeedIds = new HashSet<Guid>();
             var usedItemIds = new HashSet<Guid>();
 
@@ -215,8 +238,10 @@ public class RecommendationEngine
         catch (Exception ex)
         {
             _logger.LogError(ex, "JuddHome: Because You Watched failed for user {UserId}", user.Id);
+            return rows;
         }
 
+        _becauseYouWatchedCache[cacheKey] = new CacheEntry<IReadOnlyList<(BaseItem, IReadOnlyList<BaseItem>)>>(now.Add(ResultCacheTtl), rows);
         return rows;
     }
 
@@ -256,6 +281,24 @@ public class RecommendationEngine
         }
 
         return result.Take(count).ToList();
+    }
+
+    /// <summary>
+    /// Gets the user's unwatched item pool, reusing a short-lived cached copy when
+    /// available. The pool query is the most expensive step in both recommendation
+    /// paths, so sharing one cached pool between them avoids querying the library
+    /// twice per home-screen load.
+    /// </summary>
+    private IReadOnlyList<BaseItem> GetUnwatchedPoolCached(User user, DateTimeOffset now)
+    {
+        if (_poolCache.TryGetValue(user.Id, out var cached) && cached.ExpiresAt > now)
+        {
+            return cached.Value;
+        }
+
+        var pool = _analyser.GetUnwatchedPool(user);
+        _poolCache[user.Id] = new CacheEntry<IReadOnlyList<BaseItem>>(now.Add(ResultCacheTtl), pool);
+        return pool;
     }
 
     private UserProfile BuildProfile(User user)
@@ -431,6 +474,14 @@ public class RecommendationEngine
 /// <param name="Item">The library item.</param>
 /// <param name="Score">The weighted score (0–1).</param>
 public record ScoredItem(BaseItem Item, double Score);
+
+/// <summary>
+/// A cached value with an absolute expiry time.
+/// </summary>
+/// <typeparam name="T">The cached value type.</typeparam>
+/// <param name="ExpiresAt">When the entry stops being valid.</param>
+/// <param name="Value">The cached value.</param>
+internal sealed record CacheEntry<T>(DateTimeOffset ExpiresAt, T Value);
 
 /// <summary>
 /// An in-memory preference profile for one user.

@@ -8,6 +8,14 @@
     "category": "General",
     "versions": [
       {
+        "version": "1.0.2.0",
+        "changelog": "Perf: cache the unwatched-item pool, Because You Watched rows, and Recommended For You results per user for 3 minutes, instead of rescoring the whole library on every request. Fix: home screen failed to load on Samsung Tizen TV app because the template loader used fetch(), which some Tizen WebViews don't implement — replaced with XMLHttpRequest.",
+        "targetAbi": "10.11.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/Jeffa90/JuddHome/main/dist/juddhome_1.0.2.0.zip",
+        "checksum": "5fd344d3df55f14e7d4305a9b3da1796",
+        "timestamp": "2026-07-04T00:00:00Z"
+      },
+      {
         "version": "1.0.1.0",
         "changelog": "Fix: JuddHome Settings modal never closed (Cancel/Save appeared to do nothing and blocked all interaction) due to a CSS rule that overrode the browser's default hidden-attribute behaviour.",
         "targetAbi": "10.11.11.0",
