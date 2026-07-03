@@ -32,7 +32,25 @@ Empty sections are silently skipped. Users with fewer than 3 watched items get
 fallbacks: no Because You Watched, an expanded Popular row instead of
 Recommended For You, and a top-rated hero banner.
 
-## Build
+## Install via Jellyfin's Plugin Repository (recommended)
+
+This works the same way as any other third-party Jellyfin plugin:
+
+1. Dashboard → Plugins → **Repositories** → **Add Repository**
+2. Repository URL:
+   `https://raw.githubusercontent.com/Jeffa90/JuddHome/main/manifest.json`
+3. Save, then open the **Catalog** tab — JuddHome appears under "General"
+4. Click **Install**, then restart Jellyfin when prompted
+
+Jellyfin downloads and verifies (MD5 checksum) the packaged zip from
+`dist/` in this repo and extracts it into the plugins folder itself — no
+manual file copying needed. Each release bumps `manifest.json`'s version
+entry (`sourceUrl` + `checksum`) to point at a new zip in `dist/`.
+
+## Manual build & install
+
+Only needed if you're modifying the plugin yourself rather than installing
+a released version.
 
 Requires the .NET 9 SDK (or newer with the net9.0 targeting pack).
 

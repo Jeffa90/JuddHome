@@ -1,18 +1,20 @@
-{
-  "guid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "name": "JuddHome",
-  "description": "Netflix/Disney+ style home screen with intelligent recommendations for Juddflix",
-  "overview": "Replaces the Jellyfin home screen with modular Netflix-style rows including Because You Watched, Hero Banner, and personalised recommendations based on watch history. Supports per-user layout preferences across multiple users.",
-  "owner": "judd",
-  "category": "General",
-  "versions": [
-    {
-      "version": "1.0.0",
-      "changelog": "Initial release",
-      "targetAbi": "10.11.11.0",
-      "sourceUrl": "",
-      "checksum": "",
-      "timestamp": "2026-07-03T00:00:00Z"
-    }
-  ]
-}
+[
+  {
+    "guid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "JuddHome",
+    "description": "Netflix/Disney+ style home screen with intelligent recommendations for Juddflix",
+    "overview": "Replaces the Jellyfin home screen with modular Netflix-style rows including Because You Watched, Hero Banner, and personalised recommendations based on watch history. Supports per-user layout preferences across multiple users.",
+    "owner": "judd",
+    "category": "General",
+    "versions": [
+      {
+        "version": "1.0.0.0",
+        "changelog": "Initial release",
+        "targetAbi": "10.11.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/Jeffa90/JuddHome/main/dist/juddhome_1.0.0.0.zip",
+        "checksum": "b5b0dd5bb26516f0b74bed7ee82b1e44",
+        "timestamp": "2026-07-03T00:00:00Z"
+      }
+    ]
+  }
+]
