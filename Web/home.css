@@ -1,0 +1,584 @@
+/* JuddHome — Netflix/Disney+ style home screen.
+   Palette: bg #101010, text #ffffff, accent #00a4dc, card #1a1a1a, hover #2a2a2a. */
+
+#juddhome-root {
+    --jh-bg: #101010;
+    --jh-text: #ffffff;
+    --jh-accent: #00a4dc;
+    --jh-card: #1a1a1a;
+    --jh-hover: #2a2a2a;
+    color: var(--jh-text);
+    background: var(--jh-bg);
+    padding-bottom: 4em;
+    min-height: 60vh;
+}
+
+/* ---------- Hero banner ---------- */
+
+.jh-hero {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 7;
+    max-height: 75vh;
+    overflow: hidden;
+    background: var(--jh-card);
+}
+
+.jh-hero-slides,
+.jh-hero-slide {
+    position: absolute;
+    inset: 0;
+}
+
+.jh-hero-slide {
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    pointer-events: none;
+}
+
+.jh-hero-slide.jh-active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.jh-hero-backdrop {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.jh-hero-shade {
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(to top, rgba(16, 16, 16, 0.95) 0%, rgba(16, 16, 16, 0.4) 40%, rgba(16, 16, 16, 0.15) 100%),
+        linear-gradient(to right, rgba(16, 16, 16, 0.85) 0%, rgba(16, 16, 16, 0) 60%);
+}
+
+.jh-hero-content {
+    position: absolute;
+    left: 4%;
+    right: 30%;
+    bottom: 12%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6em;
+}
+
+.jh-hero-title {
+    font-size: clamp(1.6em, 3.5vw, 3em);
+    font-weight: 700;
+    margin: 0;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+}
+
+.jh-hero-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em;
+}
+
+.jh-hero-tag {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 1em;
+    padding: 0.15em 0.8em;
+    font-size: 0.8em;
+}
+
+.jh-hero-overview {
+    max-width: 55ch;
+    font-size: 0.95em;
+    line-height: 1.45;
+    color: rgba(255, 255, 255, 0.85);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin: 0;
+}
+
+.jh-hero-buttons {
+    display: flex;
+    gap: 0.8em;
+    margin-top: 0.4em;
+}
+
+.jh-btn {
+    border: none;
+    border-radius: 4px;
+    padding: 0.6em 1.6em;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+    transition: filter 0.15s ease, background 0.15s ease;
+}
+
+.jh-btn:hover {
+    filter: brightness(1.15);
+}
+
+.jh-btn-play {
+    background: var(--jh-text);
+    color: #000;
+}
+
+.jh-btn-info {
+    background: rgba(109, 109, 110, 0.7);
+    color: var(--jh-text);
+}
+
+.jh-btn-accent {
+    background: var(--jh-accent);
+    color: var(--jh-text);
+}
+
+.jh-btn-ghost {
+    background: transparent;
+    color: var(--jh-text);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.jh-hero-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 3;
+    background: rgba(16, 16, 16, 0.5);
+    color: var(--jh-text);
+    border: none;
+    border-radius: 50%;
+    width: 2.4em;
+    height: 2.4em;
+    font-size: 1.1em;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease, background 0.2s ease;
+}
+
+.jh-hero:hover .jh-hero-arrow {
+    opacity: 1;
+}
+
+.jh-hero-arrow:hover {
+    background: var(--jh-accent);
+}
+
+.jh-hero-prev { left: 1em; }
+.jh-hero-next { right: 1em; }
+
+.jh-hero-dots {
+    position: absolute;
+    bottom: 1em;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 0.5em;
+    z-index: 3;
+}
+
+.jh-hero-dot {
+    width: 0.55em;
+    height: 0.55em;
+    border-radius: 50%;
+    border: none;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.35);
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.jh-hero-dot.jh-active {
+    background: var(--jh-accent);
+    transform: scale(1.25);
+}
+
+/* ---------- Toolbar ---------- */
+
+.jh-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0.6em 4% 0;
+}
+
+.jh-settings-btn {
+    background: transparent;
+    color: rgba(255, 255, 255, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    padding: 0.35em 0.9em;
+    font-size: 0.85em;
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.jh-settings-btn:hover {
+    color: var(--jh-text);
+    border-color: var(--jh-accent);
+}
+
+/* ---------- Section rows ---------- */
+
+.jh-row {
+    margin: 1.6em 0 0;
+}
+
+.jh-row-title {
+    font-size: 1.15em;
+    font-weight: 600;
+    color: var(--jh-text);
+    text-align: left;
+    margin: 0 0 0.6em;
+    padding: 0 4% 0 calc(4% - 0.6em);
+    border-left: 0.35em solid var(--jh-accent);
+    margin-left: 0;
+    padding-left: calc(4% - 0.35em + 0.5em);
+}
+
+.jh-scroller {
+    display: flex;
+    gap: 0.8em;
+    overflow-x: auto;
+    overflow-y: visible;
+    padding: 0.4em 4% 1.4em;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+}
+
+.jh-scroller::-webkit-scrollbar {
+    display: none;
+}
+
+/* ---------- Cards ---------- */
+
+.jh-card {
+    position: relative;
+    flex: 0 0 auto;
+    width: 17em;
+    aspect-ratio: 16 / 9;
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--jh-card);
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.jh-card:hover,
+.jh-card:focus-within {
+    transform: scale(1.07);
+    z-index: 2;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
+    background: var(--jh-hover);
+}
+
+.jh-card-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.jh-card-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0.8em;
+    background: var(--jh-card);
+    color: rgba(255, 255, 255, 0.75);
+    font-weight: 600;
+    font-size: 0.95em;
+}
+
+.jh-card-label {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 1.4em 0.7em 0.45em;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0));
+    font-size: 0.85em;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+}
+
+.jh-card-sub {
+    display: block;
+    font-size: 0.8em;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.jh-card-progress {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.jh-card-progress-fill {
+    height: 100%;
+    background: var(--jh-accent);
+}
+
+.jh-card-hover {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 0.4em;
+    padding: 0.7em;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.92) 25%, rgba(0, 0, 0, 0.35) 70%, rgba(0, 0, 0, 0.1));
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.jh-card:hover .jh-card-hover,
+.jh-card:focus-within .jh-card-hover {
+    opacity: 1;
+}
+
+.jh-card-hover-title {
+    font-weight: 700;
+    font-size: 0.9em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.jh-card-hover-overview {
+    font-size: 0.75em;
+    line-height: 1.35;
+    color: rgba(255, 255, 255, 0.8);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin: 0;
+}
+
+.jh-card-play {
+    align-self: flex-start;
+    background: var(--jh-text);
+    color: #000;
+    border: none;
+    border-radius: 3px;
+    padding: 0.3em 1em;
+    font-size: 0.8em;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.jh-card-play:hover {
+    background: var(--jh-accent);
+    color: var(--jh-text);
+}
+
+/* ---------- Skeleton loading ---------- */
+
+.jh-skeleton-title {
+    width: 14em;
+    height: 1.1em;
+    border-radius: 4px;
+    margin: 0 0 0.6em calc(4% + 0.15em);
+}
+
+.jh-skeleton-card {
+    flex: 0 0 auto;
+    width: 17em;
+    aspect-ratio: 16 / 9;
+    border-radius: 6px;
+}
+
+.jh-pulse {
+    background: linear-gradient(90deg, var(--jh-card) 25%, var(--jh-hover) 50%, var(--jh-card) 75%);
+    background-size: 200% 100%;
+    animation: jh-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes jh-pulse {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ---------- Inline states ---------- */
+
+.jh-row-error {
+    padding: 0.6em 4%;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.9em;
+    font-style: italic;
+}
+
+.jh-mylist-prompt {
+    margin: 0 4%;
+    padding: 1.4em;
+    border: 1px dashed rgba(255, 255, 255, 0.25);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1em;
+    flex-wrap: wrap;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+/* ---------- Settings modal ---------- */
+
+.jh-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.jh-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.jh-modal-panel {
+    position: relative;
+    background: var(--jh-card);
+    color: var(--jh-text);
+    border-radius: 8px;
+    padding: 1.4em 1.6em;
+    width: min(92vw, 30em);
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+}
+
+.jh-modal-panel h2 {
+    margin: 0 0 0.3em;
+}
+
+.jh-modal-hint {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.85em;
+    margin: 0 0 1em;
+}
+
+.jh-settings-list {
+    list-style: none;
+    margin: 0 0 1.2em;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4em;
+}
+
+.jh-settings-item {
+    display: flex;
+    align-items: center;
+    gap: 0.7em;
+    background: var(--jh-bg);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 5px;
+    padding: 0.5em 0.7em;
+    cursor: grab;
+}
+
+.jh-settings-item.jh-dragging {
+    opacity: 0.4;
+}
+
+.jh-settings-item .jh-drag-handle {
+    color: rgba(255, 255, 255, 0.4);
+    cursor: grab;
+}
+
+.jh-settings-item label {
+    flex: 1;
+    cursor: pointer;
+}
+
+.jh-settings-item .jh-order-btns {
+    display: flex;
+    gap: 0.2em;
+}
+
+.jh-settings-item .jh-order-btns button {
+    background: transparent;
+    color: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+    width: 1.7em;
+    height: 1.7em;
+    cursor: pointer;
+}
+
+.jh-settings-item .jh-order-btns button:hover {
+    color: var(--jh-text);
+    border-color: var(--jh-accent);
+}
+
+.jh-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.7em;
+}
+
+/* ---------- Responsive (mobile ≤768px) ---------- */
+
+@media (max-width: 768px) {
+    .jh-hero {
+        aspect-ratio: auto;
+        height: 50vh;
+        max-height: 50vh;
+    }
+
+    .jh-hero-content {
+        right: 6%;
+        bottom: 14%;
+    }
+
+    .jh-hero-overview {
+        display: none;
+    }
+
+    .jh-hero-arrow {
+        display: none;
+    }
+
+    .jh-card,
+    .jh-skeleton-card {
+        width: 11.5em;
+    }
+
+    .jh-card:hover {
+        transform: none;
+    }
+
+    .jh-card-hover {
+        display: none;
+    }
+
+    .jh-scroller {
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: auto;
+    }
+
+    .jh-btn {
+        padding: 0.5em 1.1em;
+        font-size: 0.9em;
+    }
+}

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>JuddHome</title>
+</head>
+<body>
+<div id="JuddHomeConfigPage" data-role="page" class="page type-interior pluginConfigurationPage"
+     data-require="emby-input,emby-button,emby-checkbox,emby-select">
+    <div data-role="content">
+        <div class="content-primary">
+            <form id="JuddHomeConfigForm">
+                <div class="verticalSection">
+                    <h2 class="sectionTitle">JuddHome — Server-wide defaults</h2>
+                    <p>These defaults apply to every user until they customise their own layout
+                        from the home screen ("Customise home") or the hamburger menu.</p>
+                </div>
+
+                <div class="verticalSection">
+                    <h3>Sections</h3>
+                    <p>Untick a section to hide it by default. Drag (or use the arrows) to set the default order.</p>
+                    <ul id="jhSectionList" style="list-style:none;margin:0;padding:0;max-width:34em;"></ul>
+                </div>
+
+                <div class="verticalSection">
+                    <h3>Hero banner</h3>
+                    <label class="checkboxContainer">
+                        <input is="emby-checkbox" type="checkbox" id="jhHeroEnabled" />
+                        <span>Enable hero banner</span>
+                    </label>
+                    <div class="selectContainer">
+                        <select is="emby-select" id="jhHeroSeconds" label="Auto-advance speed">
+                            <option value="5">5 seconds</option>
+                            <option value="8">8 seconds</option>
+                            <option value="12">12 seconds</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="verticalSection">
+                    <h3>Rows &amp; recommendations</h3>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="number" id="jhItemsPerRow" min="1" max="40" step="1"
+                               label="Items per row (max 40)" />
+                    </div>
+                    <div class="selectContainer">
+                        <select is="emby-select" id="jhRefreshHours" label="Recommendation refresh interval">
+                            <option value="1">Every hour</option>
+                            <option value="3">Every 3 hours</option>
+                            <option value="6">Every 6 hours</option>
+                            <option value="12">Every 12 hours</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                        <span>Save</span>
+                    </button>
+                </div>
+            </form>
+
+            <div class="verticalSection" style="margin-top:2em;">
+                <h3>Per-user overrides</h3>
+                <p>Users who have customised their own layout. Reset returns a user to the server defaults above.</p>
+                <div id="jhUserOverrides"><em>Loading…</em></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        (function () {
+            'use strict';
+
+            var pluginId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+            var sectionTitles = {
+                HeroBanner: 'Hero Banner',
+                ContinueWatching: 'Continue Watching',
+                NextUp: 'Next Up',
+                BecauseYouWatched: 'Because You Watched',
+                RecommendedForYou: 'Recommended For You',
+                LatestMovies: 'Latest Movies',
+                LatestTvShows: 'Latest TV Shows',
+                WatchAgain: 'Watch Again',
+                PopularInLibrary: 'Popular In Your Library',
+                MyList: 'My List'
+            };
+            var allSections = Object.keys(sectionTitles);
+
+            function prop(obj, name) {
+                if (!obj) { return undefined; }
+                if (obj[name] !== undefined) { return obj[name]; }
+                var camel = name.charAt(0).toLowerCase() + name.slice(1);
+                return obj[camel];
+            }
+
+            function buildSectionList(order, disabled) {
+                var list = document.getElementById('jhSectionList');
+                list.innerHTML = '';
+                var effective = (order && order.length ? order : allSections).slice();
+                allSections.forEach(function (s) {
+                    if (effective.indexOf(s) === -1) { effective.push(s); }
+                });
+                var disabledLower = (disabled || []).map(function (s) { return s.toLowerCase(); });
+
+                effective.forEach(function (sectionType) {
+                    var li = document.createElement('li');
+                    li.draggable = true;
+                    li.dataset.section = sectionType;
+                    li.style.cssText = 'display:flex;align-items:center;gap:.7em;padding:.45em .7em;'
+                        + 'margin-bottom:.35em;border:1px solid rgba(128,128,128,.35);border-radius:4px;cursor:grab;';
+
+                    var handle = document.createElement('span');
+                    handle.textContent = '☰';
+                    handle.style.opacity = '0.5';
+                    li.appendChild(handle);
+
+                    var label = document.createElement('label');
+                    label.style.cssText = 'flex:1;display:flex;align-items:center;gap:.5em;margin:0;cursor:pointer;';
+                    var cb = document.createElement('input');
+                    cb.type = 'checkbox';
+                    cb.checked = disabledLower.indexOf(sectionType.toLowerCase()) === -1;
+                    label.appendChild(cb);
+                    label.appendChild(document.createTextNode(sectionTitles[sectionType] || sectionType));
+                    li.appendChild(label);
+
+                    var btns = document.createElement('span');
+                    ['↑', '↓'].forEach(function (arrow) {
+                        var b = document.createElement('button');
+                        b.type = 'button';
+                        b.textContent = arrow;
+                        b.style.cssText = 'width:1.8em;height:1.8em;margin-left:.2em;cursor:pointer;';
+                        b.addEventListener('click', function () {
+                            if (arrow === '↑' && li.previousElementSibling) {
+                                list.insertBefore(li, li.previousElementSibling);
+                            } else if (arrow === '↓' && li.nextElementSibling) {
+                                list.insertBefore(li.nextElementSibling, li);
+                            }
+                        });
+                        btns.appendChild(b);
+                    });
+                    li.appendChild(btns);
+
+                    li.addEventListener('dragstart', function () { li.classList.add('jhDragging'); });
+                    li.addEventListener('dragend', function () { li.classList.remove('jhDragging'); });
+                    li.addEventListener('dragover', function (e) {
+                        e.preventDefault();
+                        var dragging = list.querySelector('.jhDragging');
+                        if (dragging && dragging !== li) {
+                            var rect = li.getBoundingClientRect();
+                            var before = (e.clientY - rect.top) < rect.height / 2;
+                            list.insertBefore(dragging, before ? li : li.nextSibling);
+                        }
+                    });
+
+                    list.appendChild(li);
+                });
+            }
+
+            function loadOverrides() {
+                var box = document.getElementById('jhUserOverrides');
+                ApiClient.getJSON(ApiClient.getUrl('JuddHome/Config/Users')).then(function (users) {
+                    if (!users || !users.length) {
+                        box.innerHTML = '<em>No users have customised their layout yet.</em>';
+                        return;
+                    }
+                    box.innerHTML = '';
+                    users.forEach(function (u) {
+                        var row = document.createElement('div');
+                        row.style.cssText = 'display:flex;align-items:center;gap:1em;padding:.4em 0;'
+                            + 'border-bottom:1px solid rgba(128,128,128,.25);';
+                        var name = document.createElement('span');
+                        name.style.flex = '1';
+                        var hidden = prop(u, 'DisabledSections') || [];
+                        name.textContent = (prop(u, 'Username') || prop(u, 'UserId'))
+                            + ' — ' + (hidden.length ? hidden.length + ' section(s) hidden' : 'custom order');
+                        row.appendChild(name);
+
+                        var btn = document.createElement('button');
+                        btn.setAttribute('is', 'emby-button');
+                        btn.type = 'button';
+                        btn.className = 'raised emby-button';
+                        btn.innerHTML = '<span>Reset to defaults</span>';
+                        btn.addEventListener('click', function () {
+                            btn.disabled = true;
+                            ApiClient.ajax({
+                                type: 'POST',
+                                url: ApiClient.getUrl('JuddHome/Config/ResetUser/' + prop(u, 'UserId'))
+                            }).then(loadOverrides);
+                        });
+                        row.appendChild(btn);
+                        box.appendChild(row);
+                    });
+                }).catch(function () {
+                    box.innerHTML = '<em>Could not load user overrides.</em>';
+                });
+            }
+
+            function loadConfig() {
+                Dashboard.showLoadingMsg();
+                ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                    document.getElementById('jhHeroEnabled').checked = prop(config, 'HeroBannerEnabled') !== false;
+                    document.getElementById('jhHeroSeconds').value = String(prop(config, 'HeroRotationSeconds') || 8);
+                    document.getElementById('jhItemsPerRow').value = String(prop(config, 'ItemsPerRow') || 20);
+                    document.getElementById('jhRefreshHours').value = String(prop(config, 'RecommendationRefreshHours') || 6);
+                    buildSectionList(prop(config, 'DefaultSectionOrder'), prop(config, 'DefaultDisabledSections'));
+                    Dashboard.hideLoadingMsg();
+                });
+                loadOverrides();
+            }
+
+            document.getElementById('JuddHomeConfigForm').addEventListener('submit', function (e) {
+                e.preventDefault();
+                Dashboard.showLoadingMsg();
+                var items = Array.prototype.slice.call(
+                    document.querySelectorAll('#jhSectionList li'));
+                var body = {
+                    HeroBannerEnabled: document.getElementById('jhHeroEnabled').checked,
+                    HeroRotationSeconds: parseInt(document.getElementById('jhHeroSeconds').value, 10),
+                    ItemsPerRow: Math.min(40, Math.max(1, parseInt(document.getElementById('jhItemsPerRow').value, 10) || 20)),
+                    RecommendationRefreshHours: parseInt(document.getElementById('jhRefreshHours').value, 10),
+                    DefaultSectionOrder: items.map(function (li) { return li.dataset.section; }),
+                    DefaultDisabledSections: items
+                        .filter(function (li) { return !li.querySelector('input[type=checkbox]').checked; })
+                        .map(function (li) { return li.dataset.section; })
+                };
+                ApiClient.ajax({
+                    type: 'POST',
+                    url: ApiClient.getUrl('JuddHome/Config/Admin'),
+                    data: JSON.stringify(body),
+                    contentType: 'application/json'
+                }).then(function () {
+                    Dashboard.hideLoadingMsg();
+                    Dashboard.alert('JuddHome settings saved.');
+                }).catch(function () {
+                    Dashboard.hideLoadingMsg();
+                    Dashboard.alert('Saving JuddHome settings failed.');
+                });
+                return false;
+            });
+
+            document.getElementById('JuddHomeConfigPage').addEventListener('pageshow', loadConfig);
+        }());
+    </script>
+</div>
+</body>
+</html>
