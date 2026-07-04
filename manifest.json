@@ -8,6 +8,14 @@
     "category": "General",
     "versions": [
       {
+        "version": "1.0.7.0",
+        "changelog": "Fixes a caching bug that has silently affected every release since 1.0.1.0: the injected home screen <script> tag never changed its URL between versions, so browsers and TV apps kept serving whatever home.js/home.css/home.html they first loaded and never picked up later client-side fixes (including the Tizen fetch() fix and the 1.0.6.0 Collections/Genres/Decades tabs). The script tag now carries a ?v=<version> marker that changes on every update, and the asset endpoint now sends Cache-Control: no-store. If the home screen still looks unchanged after updating to this version, a hard refresh (or clearing the browser/app cache once) should finally pick up everything from 1.0.2.0 through 1.0.6.0 that got stuck.",
+        "targetAbi": "10.11.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/Jeffa90/JuddHome/main/dist/juddhome_1.0.7.0.zip",
+        "checksum": "25979a222c82ef21f936fe2c15ab7f11",
+        "timestamp": "2026-07-04T00:00:00Z"
+      },
+      {
         "version": "1.0.6.0",
         "changelog": "Adds a JuddHome-owned tab row (Home | Collections | Genres | Decades) below the header on the home screen: Collections shows every Collection in the library, Genres and Decades show every genre/decade with unwatched titles, full lists not capped like the home rows. Also fixes 'Latest Movies'/'Latest TV Shows' to sort by release date instead of when the file was added to the server, and adds two new sections, 'Just Added Movies' and 'Just Added TV Shows', for the old added-to-server sort behaviour.",
         "targetAbi": "10.11.11.0",

@@ -548,7 +548,11 @@ public class HomeController : ControllerBase
     /// <summary>
     /// Serves the embedded web assets (home.html / home.css / home.js).
     /// Anonymous: these are static UI files with no data; all data endpoints
-    /// require authentication.
+    /// require authentication. Explicitly uncached — these files change with
+    /// every plugin version but the injected script tag is the only URL that
+    /// carries a version marker, so home.css/home.html (fetched by home.js
+    /// itself, at a fixed unversioned URL) need the server to say "don't cache
+    /// this" or browsers/TV apps keep serving whatever they first loaded.
     /// </summary>
     /// <param name="fileName">The asset file name.</param>
     /// <returns>The asset.</returns>
@@ -575,6 +579,7 @@ public class HomeController : ControllerBase
             return NotFound();
         }
 
+        Response.Headers.CacheControl = "no-store";
         return File(stream, contentType);
     }
 
