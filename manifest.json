@@ -8,6 +8,14 @@
     "category": "General",
     "versions": [
       {
+        "version": "1.0.5.0",
+        "changelog": "Adds two new home screen row sections, Browse By Genre and Browse By Decade, built from unwatched-pool metadata already available (no configuration required). Also adds automatic Studio Collections: a new 'Organize Studio Collections (JuddHome)' scheduled task (Dashboard > Scheduled Tasks, category JuddHome) groups movies/shows sharing a studio into real Jellyfin Collections, runs daily by default or on demand via Run Now, and only creates a collection once a studio has 3+ items.",
+        "targetAbi": "10.11.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/Jeffa90/JuddHome/main/dist/juddhome_1.0.5.0.zip",
+        "checksum": "1672407ad253f62cd2cfdcafb0b9e0b6",
+        "timestamp": "2026-07-04T00:00:00Z"
+      },
+      {
         "version": "1.0.4.0",
         "changelog": "Adds a 'Once a day' (24h) option to the recommendation refresh interval dropdown in Settings — previously capped at every 12 hours.",
         "targetAbi": "10.11.11.0",

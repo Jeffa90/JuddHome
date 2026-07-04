@@ -17,6 +17,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddSingleton<UserPreferencesStore>();
         serviceCollection.AddSingleton<WatchHistoryAnalyser>();
         serviceCollection.AddSingleton<RecommendationEngine>();
+        serviceCollection.AddSingleton<CollectionOrganizer>();
         serviceCollection.AddHostedService<JuddHomeHostedService>();
     }
 }

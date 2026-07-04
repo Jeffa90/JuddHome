@@ -23,7 +23,9 @@ public class PluginConfiguration : BasePluginConfiguration
         SectionTypes.LatestTvShows,
         SectionTypes.WatchAgain,
         SectionTypes.PopularInLibrary,
-        SectionTypes.MyList
+        SectionTypes.MyList,
+        SectionTypes.GenreRows,
+        SectionTypes.DecadeRows
     };
 
     /// <summary>
@@ -133,4 +135,10 @@ public static class SectionTypes
 
     /// <summary>My List playlist section.</summary>
     public const string MyList = "MyList";
+
+    /// <summary>Genre rows (one row per top genre in the library).</summary>
+    public const string GenreRows = "GenreRows";
+
+    /// <summary>Decade rows (one row per decade represented in the library).</summary>
+    public const string DecadeRows = "DecadeRows";
 }

@@ -215,6 +215,26 @@ public class HomeController : ControllerBase
                         .ToList();
                     break;
 
+                case "GENREROWS":
+                    section.Rows = _engine.GetGenreRows(user, 8, limit)
+                        .Select(row => new SectionRowDto
+                        {
+                            Title = row.Label,
+                            Items = row.Items.Select(i => HomeItemDto.FromItem(i)).ToList()
+                        })
+                        .ToList();
+                    break;
+
+                case "DECADEROWS":
+                    section.Rows = _engine.GetDecadeRows(user, 6, limit)
+                        .Select(row => new SectionRowDto
+                        {
+                            Title = row.Label,
+                            Items = row.Items.Select(i => HomeItemDto.FromItem(i)).ToList()
+                        })
+                        .ToList();
+                    break;
+
                 case "MYLIST":
                     var playlist = _analyser.GetMyListPlaylist(user);
                     if (playlist is null)

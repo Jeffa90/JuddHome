@@ -259,7 +259,9 @@ public static class SectionTitles
         [Configuration.SectionTypes.LatestTvShows] = "Latest TV Shows",
         [Configuration.SectionTypes.WatchAgain] = "Watch Again",
         [Configuration.SectionTypes.PopularInLibrary] = "Popular In Your Library",
-        [Configuration.SectionTypes.MyList] = "My List"
+        [Configuration.SectionTypes.MyList] = "My List",
+        [Configuration.SectionTypes.GenreRows] = "Browse By Genre",
+        [Configuration.SectionTypes.DecadeRows] = "Browse By Decade"
     };
 
     /// <summary>

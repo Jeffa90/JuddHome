@@ -15,6 +15,9 @@ namespace Jellyfin.Plugin.JuddHome.Services;
 /// </summary>
 public class RecommendationEngine
 {
+    /// <summary>A genre/decade row with fewer unwatched items than this is skipped rather than shown half-empty.</summary>
+    private const int MinimumRowItems = 4;
+
     private readonly ILibraryManager _libraryManager;
     private readonly IUserManager _userManager;
     private readonly WatchHistoryAnalyser _analyser;
@@ -26,6 +29,8 @@ public class RecommendationEngine
     private readonly ConcurrentDictionary<Guid, CacheEntry<IReadOnlyList<BaseItem>>> _poolCache = new();
     private readonly ConcurrentDictionary<Guid, CacheEntry<IReadOnlyList<ScoredItem>>> _recommendationCache = new();
     private readonly ConcurrentDictionary<(Guid UserId, int MaxRows, int ItemsPerRow), CacheEntry<IReadOnlyList<(BaseItem Seed, IReadOnlyList<BaseItem> Items)>>> _becauseYouWatchedCache = new();
+    private readonly ConcurrentDictionary<(Guid UserId, int MaxRows, int ItemsPerRow), CacheEntry<IReadOnlyList<(string Label, IReadOnlyList<BaseItem> Items)>>> _genreRowsCache = new();
+    private readonly ConcurrentDictionary<(Guid UserId, int MaxRows, int ItemsPerRow), CacheEntry<IReadOnlyList<(string Label, IReadOnlyList<BaseItem> Items)>>> _decadeRowsCache = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RecommendationEngine"/> class.
@@ -64,6 +69,8 @@ public class RecommendationEngine
             _poolCache.Clear();
             _recommendationCache.Clear();
             _becauseYouWatchedCache.Clear();
+            _genreRowsCache.Clear();
+            _decadeRowsCache.Clear();
 
             var config = Plugin.Instance?.Configuration ?? new PluginConfiguration();
             var itemsPerRow = Math.Clamp(config.ItemsPerRow, 1, 40);
@@ -82,6 +89,8 @@ public class RecommendationEngine
                 // that pays for scoring the whole library.
                 GetRecommendations(user, 40);
                 GetBecauseYouWatched(user, 5, itemsPerRow);
+                GetGenreRows(user, 8, itemsPerRow);
+                GetDecadeRows(user, 6, itemsPerRow);
             }
 
             _health.ReportSectionRefresh("RecommendationProfiles");
@@ -268,6 +277,125 @@ public class RecommendationEngine
         }
 
         _becauseYouWatchedCache[cacheKey] = new CacheEntry<IReadOnlyList<(BaseItem, IReadOnlyList<BaseItem>)>>(now.Add(GetResultCacheTtl()), rows);
+        return rows;
+    }
+
+    /// <summary>
+    /// Builds one row per top genre in the user's unwatched pool, most popular
+    /// genre (by item count) first. Rows below <see cref="MinimumRowItems"/> items
+    /// are skipped rather than shown half-empty.
+    /// </summary>
+    /// <param name="user">The user.</param>
+    /// <param name="maxRows">Maximum number of genre rows.</param>
+    /// <param name="itemsPerRow">Maximum items per row.</param>
+    /// <returns>The rows: genre name plus its best-rated unwatched items.</returns>
+    public IReadOnlyList<(string Label, IReadOnlyList<BaseItem> Items)> GetGenreRows(
+        User user, int maxRows, int itemsPerRow)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var cacheKey = (user.Id, maxRows, itemsPerRow);
+        if (_genreRowsCache.TryGetValue(cacheKey, out var cached) && cached.ExpiresAt > now)
+        {
+            return cached.Value;
+        }
+
+        IReadOnlyList<(string, IReadOnlyList<BaseItem>)> rows;
+        try
+        {
+            var pool = GetUnwatchedPoolCached(user, now);
+            var byGenre = new Dictionary<string, List<BaseItem>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var item in pool)
+            {
+                foreach (var genre in item.Genres ?? Array.Empty<string>())
+                {
+                    if (!byGenre.TryGetValue(genre, out var list))
+                    {
+                        list = new List<BaseItem>();
+                        byGenre[genre] = list;
+                    }
+
+                    list.Add(item);
+                }
+            }
+
+            rows = byGenre
+                .Where(kv => kv.Value.Count >= MinimumRowItems)
+                .OrderByDescending(kv => kv.Value.Count)
+                .Take(maxRows)
+                .Select(kv => (kv.Key, (IReadOnlyList<BaseItem>)kv.Value
+                    .OrderByDescending(i => i.CommunityRating ?? 0)
+                    .Take(itemsPerRow)
+                    .ToList()))
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "JuddHome: genre rows failed for user {UserId}", user.Id);
+            return Array.Empty<(string, IReadOnlyList<BaseItem>)>();
+        }
+
+        _genreRowsCache[cacheKey] = new CacheEntry<IReadOnlyList<(string, IReadOnlyList<BaseItem>)>>(now.Add(GetResultCacheTtl()), rows);
+        return rows;
+    }
+
+    /// <summary>
+    /// Builds one row per decade represented in the user's unwatched pool, busiest
+    /// decade (by item count) first. Rows below <see cref="MinimumRowItems"/> items
+    /// are skipped rather than shown half-empty.
+    /// </summary>
+    /// <param name="user">The user.</param>
+    /// <param name="maxRows">Maximum number of decade rows.</param>
+    /// <param name="itemsPerRow">Maximum items per row.</param>
+    /// <returns>The rows: decade label (e.g. "1990s") plus its best-rated unwatched items.</returns>
+    public IReadOnlyList<(string Label, IReadOnlyList<BaseItem> Items)> GetDecadeRows(
+        User user, int maxRows, int itemsPerRow)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var cacheKey = (user.Id, maxRows, itemsPerRow);
+        if (_decadeRowsCache.TryGetValue(cacheKey, out var cached) && cached.ExpiresAt > now)
+        {
+            return cached.Value;
+        }
+
+        IReadOnlyList<(string, IReadOnlyList<BaseItem>)> rows;
+        try
+        {
+            var pool = GetUnwatchedPoolCached(user, now);
+            var byDecade = new Dictionary<int, List<BaseItem>>();
+            foreach (var item in pool)
+            {
+                if (item.ProductionYear is not { } year || year <= 0)
+                {
+                    continue;
+                }
+
+                var decade = (year / 10) * 10;
+                if (!byDecade.TryGetValue(decade, out var list))
+                {
+                    list = new List<BaseItem>();
+                    byDecade[decade] = list;
+                }
+
+                list.Add(item);
+            }
+
+            rows = byDecade
+                .Where(kv => kv.Value.Count >= MinimumRowItems)
+                .OrderByDescending(kv => kv.Value.Count)
+                .Take(maxRows)
+                .Select(kv => ($"{kv.Key}s", (IReadOnlyList<BaseItem>)kv.Value
+                    .OrderByDescending(i => i.CommunityRating ?? 0)
+                    .Take(itemsPerRow)
+                    .ToList()))
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "JuddHome: decade rows failed for user {UserId}", user.Id);
+            return Array.Empty<(string, IReadOnlyList<BaseItem>)>();
+        }
+
+        _decadeRowsCache[cacheKey] = new CacheEntry<IReadOnlyList<(string, IReadOnlyList<BaseItem>)>>(now.Add(GetResultCacheTtl()), rows);
         return rows;
     }
 
