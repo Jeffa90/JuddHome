@@ -377,7 +377,7 @@ public class HomeController : ControllerBase
         config.HeroBannerEnabled = dto.HeroBannerEnabled;
         config.HeroRotationSeconds = dto.HeroRotationSeconds is 5 or 8 or 12 ? dto.HeroRotationSeconds : 8;
         config.ItemsPerRow = Math.Clamp(dto.ItemsPerRow, 1, MaxItemsPerRow);
-        config.RecommendationRefreshHours = dto.RecommendationRefreshHours is 1 or 3 or 6 or 12
+        config.RecommendationRefreshHours = dto.RecommendationRefreshHours is 1 or 3 or 6 or 12 or 24
             ? dto.RecommendationRefreshHours
             : 6;
 

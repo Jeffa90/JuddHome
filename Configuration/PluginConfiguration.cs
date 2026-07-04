@@ -42,7 +42,7 @@ public class PluginConfiguration : BasePluginConfiguration
     public int ItemsPerRow { get; set; } = 20;
 
     /// <summary>
-    /// Gets or sets the recommendation profile refresh interval in hours (1 / 3 / 6 / 12).
+    /// Gets or sets the recommendation profile refresh interval in hours (1 / 3 / 6 / 12 / 24).
     /// </summary>
     public int RecommendationRefreshHours { get; set; } = 6;
 

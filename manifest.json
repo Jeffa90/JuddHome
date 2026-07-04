@@ -8,6 +8,14 @@
     "category": "General",
     "versions": [
       {
+        "version": "1.0.4.0",
+        "changelog": "Adds a 'Once a day' (24h) option to the recommendation refresh interval dropdown in Settings — previously capped at every 12 hours.",
+        "targetAbi": "10.11.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/Jeffa90/JuddHome/main/dist/juddhome_1.0.4.0.zip",
+        "checksum": "fdf0b0eff6cad60876b726ec0c6431ed",
+        "timestamp": "2026-07-04T00:00:00Z"
+      },
+      {
         "version": "1.0.3.0",
         "changelog": "Perf: recommendation and Because You Watched caches are now proactively re-warmed for every user right after each scheduled profile refresh, in the background, instead of being computed on-demand during a user's own page load. Previously the per-request cache only helped repeat visits within 3 minutes of each other, so most real visits (more than 3 minutes apart) still paid the full library-scoring cost live. Cache lifetime now tracks the configured recommendation refresh interval instead of a fixed 3 minutes.",
         "targetAbi": "10.11.11.0",
