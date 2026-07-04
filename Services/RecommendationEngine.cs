@@ -29,8 +29,8 @@ public class RecommendationEngine
     private readonly ConcurrentDictionary<Guid, CacheEntry<IReadOnlyList<BaseItem>>> _poolCache = new();
     private readonly ConcurrentDictionary<Guid, CacheEntry<IReadOnlyList<ScoredItem>>> _recommendationCache = new();
     private readonly ConcurrentDictionary<(Guid UserId, int MaxRows, int ItemsPerRow), CacheEntry<IReadOnlyList<(BaseItem Seed, IReadOnlyList<BaseItem> Items)>>> _becauseYouWatchedCache = new();
-    private readonly ConcurrentDictionary<(Guid UserId, int MaxRows, int ItemsPerRow), CacheEntry<IReadOnlyList<(string Label, IReadOnlyList<BaseItem> Items)>>> _genreRowsCache = new();
-    private readonly ConcurrentDictionary<(Guid UserId, int MaxRows, int ItemsPerRow), CacheEntry<IReadOnlyList<(string Label, IReadOnlyList<BaseItem> Items)>>> _decadeRowsCache = new();
+    private readonly ConcurrentDictionary<Guid, CacheEntry<IReadOnlyList<(string Label, IReadOnlyList<BaseItem> Items)>>> _genreRowsCache = new();
+    private readonly ConcurrentDictionary<Guid, CacheEntry<IReadOnlyList<(string Label, IReadOnlyList<BaseItem> Items)>>> _decadeRowsCache = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RecommendationEngine"/> class.
@@ -89,8 +89,8 @@ public class RecommendationEngine
                 // that pays for scoring the whole library.
                 GetRecommendations(user, 40);
                 GetBecauseYouWatched(user, 5, itemsPerRow);
-                GetGenreRows(user, 8, itemsPerRow);
-                GetDecadeRows(user, 6, itemsPerRow);
+                GetGenreRows(user);
+                GetDecadeRows(user);
             }
 
             _health.ReportSectionRefresh("RecommendationProfiles");
@@ -281,20 +281,17 @@ public class RecommendationEngine
     }
 
     /// <summary>
-    /// Builds one row per top genre in the user's unwatched pool, most popular
-    /// genre (by item count) first. Rows below <see cref="MinimumRowItems"/> items
-    /// are skipped rather than shown half-empty.
+    /// Builds one row per genre in the user's unwatched pool, alphabetical order,
+    /// each row holding every matching item (best-rated first). Used by the
+    /// dedicated Genres page, not the home screen. Genres below
+    /// <see cref="MinimumRowItems"/> items are skipped rather than shown half-empty.
     /// </summary>
     /// <param name="user">The user.</param>
-    /// <param name="maxRows">Maximum number of genre rows.</param>
-    /// <param name="itemsPerRow">Maximum items per row.</param>
-    /// <returns>The rows: genre name plus its best-rated unwatched items.</returns>
-    public IReadOnlyList<(string Label, IReadOnlyList<BaseItem> Items)> GetGenreRows(
-        User user, int maxRows, int itemsPerRow)
+    /// <returns>The rows: genre name plus every unwatched item in it.</returns>
+    public IReadOnlyList<(string Label, IReadOnlyList<BaseItem> Items)> GetGenreRows(User user)
     {
         var now = DateTimeOffset.UtcNow;
-        var cacheKey = (user.Id, maxRows, itemsPerRow);
-        if (_genreRowsCache.TryGetValue(cacheKey, out var cached) && cached.ExpiresAt > now)
+        if (_genreRowsCache.TryGetValue(user.Id, out var cached) && cached.ExpiresAt > now)
         {
             return cached.Value;
         }
@@ -320,11 +317,9 @@ public class RecommendationEngine
 
             rows = byGenre
                 .Where(kv => kv.Value.Count >= MinimumRowItems)
-                .OrderByDescending(kv => kv.Value.Count)
-                .Take(maxRows)
+                .OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
                 .Select(kv => (kv.Key, (IReadOnlyList<BaseItem>)kv.Value
                     .OrderByDescending(i => i.CommunityRating ?? 0)
-                    .Take(itemsPerRow)
                     .ToList()))
                 .ToList();
         }
@@ -334,25 +329,22 @@ public class RecommendationEngine
             return Array.Empty<(string, IReadOnlyList<BaseItem>)>();
         }
 
-        _genreRowsCache[cacheKey] = new CacheEntry<IReadOnlyList<(string, IReadOnlyList<BaseItem>)>>(now.Add(GetResultCacheTtl()), rows);
+        _genreRowsCache[user.Id] = new CacheEntry<IReadOnlyList<(string, IReadOnlyList<BaseItem>)>>(now.Add(GetResultCacheTtl()), rows);
         return rows;
     }
 
     /// <summary>
-    /// Builds one row per decade represented in the user's unwatched pool, busiest
-    /// decade (by item count) first. Rows below <see cref="MinimumRowItems"/> items
-    /// are skipped rather than shown half-empty.
+    /// Builds one row per decade represented in the user's unwatched pool, newest
+    /// decade first, each row holding every matching item (best-rated first). Used
+    /// by the dedicated Decades page, not the home screen. Decades below
+    /// <see cref="MinimumRowItems"/> items are skipped rather than shown half-empty.
     /// </summary>
     /// <param name="user">The user.</param>
-    /// <param name="maxRows">Maximum number of decade rows.</param>
-    /// <param name="itemsPerRow">Maximum items per row.</param>
-    /// <returns>The rows: decade label (e.g. "1990s") plus its best-rated unwatched items.</returns>
-    public IReadOnlyList<(string Label, IReadOnlyList<BaseItem> Items)> GetDecadeRows(
-        User user, int maxRows, int itemsPerRow)
+    /// <returns>The rows: decade label (e.g. "1990s") plus every unwatched item in it.</returns>
+    public IReadOnlyList<(string Label, IReadOnlyList<BaseItem> Items)> GetDecadeRows(User user)
     {
         var now = DateTimeOffset.UtcNow;
-        var cacheKey = (user.Id, maxRows, itemsPerRow);
-        if (_decadeRowsCache.TryGetValue(cacheKey, out var cached) && cached.ExpiresAt > now)
+        if (_decadeRowsCache.TryGetValue(user.Id, out var cached) && cached.ExpiresAt > now)
         {
             return cached.Value;
         }
@@ -381,11 +373,9 @@ public class RecommendationEngine
 
             rows = byDecade
                 .Where(kv => kv.Value.Count >= MinimumRowItems)
-                .OrderByDescending(kv => kv.Value.Count)
-                .Take(maxRows)
+                .OrderByDescending(kv => kv.Key)
                 .Select(kv => ($"{kv.Key}s", (IReadOnlyList<BaseItem>)kv.Value
                     .OrderByDescending(i => i.CommunityRating ?? 0)
-                    .Take(itemsPerRow)
                     .ToList()))
                 .ToList();
         }
@@ -395,7 +385,7 @@ public class RecommendationEngine
             return Array.Empty<(string, IReadOnlyList<BaseItem>)>();
         }
 
-        _decadeRowsCache[cacheKey] = new CacheEntry<IReadOnlyList<(string, IReadOnlyList<BaseItem>)>>(now.Add(GetResultCacheTtl()), rows);
+        _decadeRowsCache[user.Id] = new CacheEntry<IReadOnlyList<(string, IReadOnlyList<BaseItem>)>>(now.Add(GetResultCacheTtl()), rows);
         return rows;
     }
 

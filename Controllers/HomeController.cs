@@ -33,6 +33,7 @@ public class HomeController : ControllerBase
     private readonly IPlaylistManager _playlistManager;
     private readonly WatchHistoryAnalyser _analyser;
     private readonly RecommendationEngine _engine;
+    private readonly CollectionOrganizer _collectionOrganizer;
     private readonly UserPreferencesStore _prefsStore;
     private readonly HealthService _health;
     private readonly ILogger<HomeController> _logger;
@@ -46,6 +47,7 @@ public class HomeController : ControllerBase
     /// <param name="playlistManager">Instance of the <see cref="IPlaylistManager"/> interface.</param>
     /// <param name="analyser">The watch history analyser.</param>
     /// <param name="engine">The recommendation engine.</param>
+    /// <param name="collectionOrganizer">The collection organizer.</param>
     /// <param name="prefsStore">The user preferences store.</param>
     /// <param name="health">The health service.</param>
     /// <param name="logger">The logger.</param>
@@ -56,6 +58,7 @@ public class HomeController : ControllerBase
         IPlaylistManager playlistManager,
         WatchHistoryAnalyser analyser,
         RecommendationEngine engine,
+        CollectionOrganizer collectionOrganizer,
         UserPreferencesStore prefsStore,
         HealthService health,
         ILogger<HomeController> logger)
@@ -66,6 +69,7 @@ public class HomeController : ControllerBase
         _playlistManager = playlistManager;
         _analyser = analyser;
         _engine = engine;
+        _collectionOrganizer = collectionOrganizer;
         _prefsStore = prefsStore;
         _health = health;
         _logger = logger;
@@ -203,6 +207,18 @@ public class HomeController : ControllerBase
                         .ToList();
                     break;
 
+                case "JUSTADDEDMOVIES":
+                    section.Items = _analyser.GetRecentlyAdded(user, BaseItemKind.Movie, limit)
+                        .Select(i => HomeItemDto.FromItem(i))
+                        .ToList();
+                    break;
+
+                case "JUSTADDEDTVSHOWS":
+                    section.Items = _analyser.GetRecentlyAdded(user, BaseItemKind.Series, limit)
+                        .Select(i => HomeItemDto.FromItem(i))
+                        .ToList();
+                    break;
+
                 case "WATCHAGAIN":
                     section.Items = _analyser.GetWatchAgain(user, limit)
                         .Select(i => HomeItemDto.FromItem(i))
@@ -212,26 +228,6 @@ public class HomeController : ControllerBase
                 case "POPULARINLIBRARY":
                     section.Items = _analyser.GetPopularUnwatched(user, limit)
                         .Select(i => HomeItemDto.FromItem(i))
-                        .ToList();
-                    break;
-
-                case "GENREROWS":
-                    section.Rows = _engine.GetGenreRows(user, 8, limit)
-                        .Select(row => new SectionRowDto
-                        {
-                            Title = row.Label,
-                            Items = row.Items.Select(i => HomeItemDto.FromItem(i)).ToList()
-                        })
-                        .ToList();
-                    break;
-
-                case "DECADEROWS":
-                    section.Rows = _engine.GetDecadeRows(user, 6, limit)
-                        .Select(row => new SectionRowDto
-                        {
-                            Title = row.Label,
-                            Items = row.Items.Select(i => HomeItemDto.FromItem(i)).ToList()
-                        })
                         .ToList();
                     break;
 
@@ -264,6 +260,78 @@ public class HomeController : ControllerBase
         }
 
         return section;
+    }
+
+    /// <summary>
+    /// Gets every genre in the user's unwatched pool as its own row (full page,
+    /// not the capped home-screen version).
+    /// </summary>
+    /// <returns>The genre rows.</returns>
+    [HttpGet("Genres")]
+    [Authorize]
+    public ActionResult<List<SectionRowDto>> GetGenres()
+    {
+        var user = GetCurrentUser();
+        if (user is null)
+        {
+            return Unauthorized();
+        }
+
+        return _engine.GetGenreRows(user)
+            .Select(row => new SectionRowDto
+            {
+                Title = row.Label,
+                Items = row.Items.Select(i => HomeItemDto.FromItem(i)).ToList()
+            })
+            .ToList();
+    }
+
+    /// <summary>
+    /// Gets every decade represented in the user's unwatched pool as its own row
+    /// (full page, not the capped home-screen version).
+    /// </summary>
+    /// <returns>The decade rows.</returns>
+    [HttpGet("Decades")]
+    [Authorize]
+    public ActionResult<List<SectionRowDto>> GetDecades()
+    {
+        var user = GetCurrentUser();
+        if (user is null)
+        {
+            return Unauthorized();
+        }
+
+        return _engine.GetDecadeRows(user)
+            .Select(row => new SectionRowDto
+            {
+                Title = row.Label,
+                Items = row.Items.Select(i => HomeItemDto.FromItem(i)).ToList()
+            })
+            .ToList();
+    }
+
+    /// <summary>
+    /// Gets every Collection (BoxSet) in the library as its own row, regardless of
+    /// whether JuddHome or something else created it.
+    /// </summary>
+    /// <returns>The collection rows.</returns>
+    [HttpGet("Collections")]
+    [Authorize]
+    public ActionResult<List<SectionRowDto>> GetCollections()
+    {
+        var user = GetCurrentUser();
+        if (user is null)
+        {
+            return Unauthorized();
+        }
+
+        return _collectionOrganizer.GetCollectionRows(user)
+            .Select(row => new SectionRowDto
+            {
+                Title = row.Label,
+                Items = row.Items.Select(i => HomeItemDto.FromItem(i)).ToList()
+            })
+            .ToList();
     }
 
     /// <summary>

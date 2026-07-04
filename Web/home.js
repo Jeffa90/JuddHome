@@ -14,7 +14,8 @@
         heroItems: [],
         heroSeconds: 8,
         sections: [],
-        layout: null
+        layout: null,
+        activeTab: 'home'
     };
 
     /* ---------- helpers ---------- */
@@ -618,6 +619,106 @@
         drawer.appendChild(link);
     }
 
+    /* ---------- tabs ---------- */
+
+    // Renders a flat list of { Title, Items } rows into a container — used by
+    // the Genres/Decades/Collections pages, which are just rows with no hero,
+    // no per-user customisation, and no capping (show everything).
+    function renderRowsPage(container, rows, emptyMessage) {
+        container.textContent = '';
+        var withItems = (rows || []).filter(function (r) {
+            return (prop(r, 'Items') || []).length;
+        });
+
+        if (!withItems.length) {
+            container.appendChild(el('div', 'jh-empty-page', emptyMessage));
+            return;
+        }
+
+        var frag = document.createDocumentFragment();
+        withItems.forEach(function (r) {
+            frag.appendChild(buildRow(prop(r, 'Title'), prop(r, 'Items')));
+        });
+        container.appendChild(frag);
+    }
+
+    function loadRowsPage(sectionsBox, path, emptyMessage, failMessage) {
+        sectionsBox.appendChild(skeletonRow(6));
+        return getJson(path).then(function (rows) {
+            renderRowsPage(sectionsBox, rows, emptyMessage);
+        }).catch(function (err) {
+            console.warn('JuddHome: ' + path + ' failed', err);
+            renderRowsPage(sectionsBox, null, failMessage);
+        });
+    }
+
+    function loadHomeTab(root) {
+        var sectionsBox = root.querySelector('#jh-sections');
+        return getJson('JuddHome/Sections').then(function (layout) {
+            STATE.layout = layout;
+            STATE.heroSeconds = prop(layout, 'HeroRotationSeconds') || 8;
+            var sections = (prop(layout, 'Sections') || []).filter(function (s) {
+                return prop(s, 'Enabled');
+            });
+            var heroEnabled = sections.some(function (s) {
+                return prop(s, 'SectionType') === 'HeroBanner';
+            });
+
+            if (heroEnabled) {
+                loadHero(root);
+            }
+
+            // Fetch every row independently so one failure can't block others.
+            sections.forEach(function (s) {
+                if (prop(s, 'SectionType') === 'HeroBanner') { return; }
+                loadSection(s, sectionsBox);
+            });
+        });
+    }
+
+    function switchTab(root, tab) {
+        STATE.activeTab = tab;
+        var tabs = root.querySelectorAll('.jh-tab');
+        Array.prototype.forEach.call(tabs, function (btn) {
+            btn.classList.toggle('jh-tab-active', btn.dataset.tab === tab);
+        });
+
+        var hero = root.querySelector('#jh-hero');
+        var toolbar = root.querySelector('.jh-toolbar');
+        var sectionsBox = root.querySelector('#jh-sections');
+        sectionsBox.textContent = '';
+
+        if (tab === 'home') {
+            if (toolbar) { toolbar.hidden = false; }
+            loadHomeTab(root);
+            return;
+        }
+
+        stopHero();
+        if (hero) { hero.hidden = true; }
+        if (toolbar) { toolbar.hidden = true; }
+
+        if (tab === 'collections') {
+            loadRowsPage(sectionsBox, 'JuddHome/Collections',
+                'No collections yet.', 'Could not load collections.');
+        } else if (tab === 'genres') {
+            loadRowsPage(sectionsBox, 'JuddHome/Genres',
+                'No genres to show yet.', 'Could not load genres.');
+        } else if (tab === 'decades') {
+            loadRowsPage(sectionsBox, 'JuddHome/Decades',
+                'No decades to show yet.', 'Could not load decades.');
+        }
+    }
+
+    function wireTabs(root) {
+        var tabs = root.querySelectorAll('.jh-tab');
+        Array.prototype.forEach.call(tabs, function (btn) {
+            btn.addEventListener('click', function () {
+                switchTab(root, btn.dataset.tab);
+            });
+        });
+    }
+
     /* ---------- takeover ---------- */
 
     function takeOver(container) {
@@ -640,28 +741,9 @@
             root.querySelector('#jh-settings-btn').addEventListener('click', function () {
                 openSettings(root);
             });
+            wireTabs(root);
 
-            return getJson('JuddHome/Sections').then(function (layout) {
-                STATE.layout = layout;
-                STATE.heroSeconds = prop(layout, 'HeroRotationSeconds') || 8;
-                var sections = (prop(layout, 'Sections') || []).filter(function (s) {
-                    return prop(s, 'Enabled');
-                });
-                var sectionsBox = root.querySelector('#jh-sections');
-                var heroEnabled = sections.some(function (s) {
-                    return prop(s, 'SectionType') === 'HeroBanner';
-                });
-
-                if (heroEnabled) {
-                    loadHero(root);
-                }
-
-                // Fetch every row independently so one failure can't block others.
-                sections.forEach(function (s) {
-                    if (prop(s, 'SectionType') === 'HeroBanner') { return; }
-                    loadSection(s, sectionsBox);
-                });
-            });
+            return loadHomeTab(root);
         }).catch(function (err) {
             console.error('JuddHome: failed to initialise, restoring vanilla home screen', err);
             Array.prototype.forEach.call(container.children, function (child) {

@@ -130,15 +130,36 @@ public class WatchHistoryAnalyser
     }
 
     /// <summary>
-    /// Gets the most recently added movies or series.
+    /// Gets the most recently released movies or series (by premiere date), newest
+    /// first — "Latest Movies"/"Latest TV Shows" means new releases, not new to
+    /// the server (see <see cref="GetRecentlyAdded"/> for that).
     /// </summary>
     /// <param name="user">The user.</param>
     /// <param name="kind">Movie or Series.</param>
     /// <param name="limit">Maximum number of items.</param>
-    /// <returns>The latest items.</returns>
+    /// <returns>The latest-released items.</returns>
     public IReadOnlyList<BaseItem> GetLatest(User user, BaseItemKind kind, int limit)
     {
         return SafeQuery(nameof(GetLatest), () => _libraryManager.GetItemList(new InternalItemsQuery(user)
+        {
+            IncludeItemTypes = new[] { kind },
+            Recursive = true,
+            OrderBy = new[] { (ItemSortBy.PremiereDate, SortOrder.Descending) },
+            Limit = limit
+        }));
+    }
+
+    /// <summary>
+    /// Gets the movies or series most recently added to the server (by file/import
+    /// date), newest first — powers the "Just Added" sections.
+    /// </summary>
+    /// <param name="user">The user.</param>
+    /// <param name="kind">Movie or Series.</param>
+    /// <param name="limit">Maximum number of items.</param>
+    /// <returns>The recently-added items.</returns>
+    public IReadOnlyList<BaseItem> GetRecentlyAdded(User user, BaseItemKind kind, int limit)
+    {
+        return SafeQuery(nameof(GetRecentlyAdded), () => _libraryManager.GetItemList(new InternalItemsQuery(user)
         {
             IncludeItemTypes = new[] { kind },
             Recursive = true,

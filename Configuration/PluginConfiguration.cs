@@ -21,11 +21,11 @@ public class PluginConfiguration : BasePluginConfiguration
         SectionTypes.RecommendedForYou,
         SectionTypes.LatestMovies,
         SectionTypes.LatestTvShows,
+        SectionTypes.JustAddedMovies,
+        SectionTypes.JustAddedTvShows,
         SectionTypes.WatchAgain,
         SectionTypes.PopularInLibrary,
-        SectionTypes.MyList,
-        SectionTypes.GenreRows,
-        SectionTypes.DecadeRows
+        SectionTypes.MyList
     };
 
     /// <summary>
@@ -127,6 +127,12 @@ public static class SectionTypes
     /// <summary>Latest TV shows section.</summary>
     public const string LatestTvShows = "LatestTvShows";
 
+    /// <summary>Just added movies section (recently added to the server, not recently released).</summary>
+    public const string JustAddedMovies = "JustAddedMovies";
+
+    /// <summary>Just added TV shows section (recently added to the server, not recently released).</summary>
+    public const string JustAddedTvShows = "JustAddedTvShows";
+
     /// <summary>Watch again section.</summary>
     public const string WatchAgain = "WatchAgain";
 
@@ -135,10 +141,4 @@ public static class SectionTypes
 
     /// <summary>My List playlist section.</summary>
     public const string MyList = "MyList";
-
-    /// <summary>Genre rows (one row per top genre in the library).</summary>
-    public const string GenreRows = "GenreRows";
-
-    /// <summary>Decade rows (one row per decade represented in the library).</summary>
-    public const string DecadeRows = "DecadeRows";
 }

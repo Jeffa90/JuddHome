@@ -198,6 +198,43 @@
     transform: scale(1.25);
 }
 
+/* ---------- Tabs ---------- */
+
+.jh-tabs {
+    display: flex;
+    gap: 1.6em;
+    padding: 0.9em 4% 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.jh-tab {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.95em;
+    font-weight: 600;
+    padding: 0 0 0.7em;
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.jh-tab:hover {
+    color: var(--jh-text);
+}
+
+.jh-tab-active {
+    color: var(--jh-text);
+    border-bottom-color: var(--jh-accent);
+}
+
+.jh-empty-page {
+    padding: 3em 4%;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.95em;
+    text-align: center;
+}
+
 /* ---------- Toolbar ---------- */
 
 .jh-toolbar {

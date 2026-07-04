@@ -1,4 +1,5 @@
 using Jellyfin.Data.Enums;
+using Jellyfin.Database.Implementations.Entities;
 using MediaBrowser.Controller.Collections;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
@@ -141,6 +142,59 @@ public class CollectionOrganizer
         catch (Exception ex)
         {
             _logger.LogError(ex, "JuddHome: studio collection organizing failed");
+        }
+    }
+
+    /// <summary>
+    /// Gets every Collection (BoxSet) in the library as a row, regardless of what
+    /// created it — JuddHome's own Studio Collections, manually-created ones, or
+    /// anything else. Alphabetical by collection name; empty collections are skipped.
+    /// </summary>
+    /// <param name="user">The requesting user (controls what they're permitted to see).</param>
+    /// <returns>The rows: collection name plus its items.</returns>
+    public IReadOnlyList<(string Label, IReadOnlyList<BaseItem> Items)> GetCollectionRows(User user)
+    {
+        try
+        {
+            var collections = _libraryManager.GetItemList(new InternalItemsQuery(user)
+            {
+                IncludeItemTypes = new[] { BaseItemKind.BoxSet },
+                Recursive = true
+            });
+
+            var rows = new List<(string, IReadOnlyList<BaseItem>)>();
+            foreach (var collection in collections)
+            {
+                if (collection is not Folder folder)
+                {
+                    continue;
+                }
+
+                List<BaseItem> items;
+                try
+                {
+                    items = folder.GetChildren(user, true).ToList();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "JuddHome: failed to read children of collection {CollectionId}", collection.Id);
+                    continue;
+                }
+
+                if (items.Count == 0)
+                {
+                    continue;
+                }
+
+                rows.Add((collection.Name ?? "Untitled Collection", items));
+            }
+
+            return rows.OrderBy(r => r.Item1, StringComparer.OrdinalIgnoreCase).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "JuddHome: failed to list collections for user {UserId}", user.Id);
+            return Array.Empty<(string, IReadOnlyList<BaseItem>)>();
         }
     }
 }
