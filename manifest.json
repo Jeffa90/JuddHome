@@ -8,6 +8,14 @@
     "category": "General",
     "versions": [
       {
+        "version": "1.0.9.0",
+        "changelog": "Fixes the 1.0.8.0 cleanup task having no way to run it: a scheduled task with zero triggers doesn't get a Run Now control in Jellyfin's Scheduled Tasks page. 'Remove Studio Collections (JuddHome, one-time cleanup)' now has a startup trigger, so it runs automatically the next time the server starts (which you need to do anyway to pick up this update) with no manual clicking needed. Safe to run repeatedly — it's a no-op once the studio collections are gone.",
+        "targetAbi": "10.11.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/Jeffa90/JuddHome/main/dist/juddhome_1.0.9.0.zip",
+        "checksum": "a786635a0324ce740d15da01ee10e388",
+        "timestamp": "2026-07-04T00:00:00Z"
+      },
+      {
         "version": "1.0.8.0",
         "changelog": "Removes the studio Collections auto-grouping (was sweeping nearly every movie into a collection) and adds a one-time 'Remove Studio Collections (JuddHome, one-time cleanup)' scheduled task (Dashboard > Scheduled Tasks, Run Now) to delete the ones it already made, without touching your movies/shows or any other collection. Adds a 'Because You Watched: max rows' setting (1-5, default 3) in Settings, and moves it near the bottom of the default section order. Also fixes the admin Settings page, which was missing Just Added Movies/TV Shows entirely (added in 1.0.6.0 but never wired into the settings page) — they're now visible and reorderable there too.",
         "targetAbi": "10.11.11.0",
