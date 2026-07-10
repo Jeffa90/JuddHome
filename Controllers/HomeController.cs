@@ -172,7 +172,7 @@ public class HomeController : ControllerBase
                     break;
 
                 case "BECAUSEYOUWATCHED":
-                    section.Rows = _engine.GetBecauseYouWatched(user, 5, limit)
+                    section.Rows = _engine.GetBecauseYouWatched(user, Math.Clamp(config.MaxBecauseYouWatchedRows, 1, 5), limit)
                         .Select(row => new SectionRowDto
                         {
                             Title = $"Because you watched {row.Seed.Name}",
@@ -468,6 +468,7 @@ public class HomeController : ControllerBase
         config.RecommendationRefreshHours = dto.RecommendationRefreshHours is 1 or 3 or 6 or 12 or 24
             ? dto.RecommendationRefreshHours
             : 6;
+        config.MaxBecauseYouWatchedRows = Math.Clamp(dto.MaxBecauseYouWatchedRows, 1, 5);
 
         if (dto.DefaultSectionOrder.Length > 0)
         {

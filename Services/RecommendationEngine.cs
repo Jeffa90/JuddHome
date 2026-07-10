@@ -74,6 +74,7 @@ public class RecommendationEngine
 
             var config = Plugin.Instance?.Configuration ?? new PluginConfiguration();
             var itemsPerRow = Math.Clamp(config.ItemsPerRow, 1, 40);
+            var maxBecauseYouWatchedRows = Math.Clamp(config.MaxBecauseYouWatchedRows, 1, 5);
 
             foreach (var user in _userManager.GetUsers().ToList())
             {
@@ -88,7 +89,7 @@ public class RecommendationEngine
                 // load after this refresh (or after server start) is never the one
                 // that pays for scoring the whole library.
                 GetRecommendations(user, 40);
-                GetBecauseYouWatched(user, 5, itemsPerRow);
+                GetBecauseYouWatched(user, maxBecauseYouWatchedRows, itemsPerRow);
                 GetGenreRows(user);
                 GetDecadeRows(user);
             }

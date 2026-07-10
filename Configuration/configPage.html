@@ -51,6 +51,15 @@
                             <option value="24">Once a day</option>
                         </select>
                     </div>
+                    <div class="selectContainer">
+                        <select is="emby-select" id="jhBecauseYouWatchedRows" label="Because You Watched: max rows">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div>
@@ -77,12 +86,14 @@
                 HeroBanner: 'Hero Banner',
                 ContinueWatching: 'Continue Watching',
                 NextUp: 'Next Up',
-                BecauseYouWatched: 'Because You Watched',
                 RecommendedForYou: 'Recommended For You',
                 LatestMovies: 'Latest Movies',
                 LatestTvShows: 'Latest TV Shows',
+                JustAddedMovies: 'Just Added Movies',
+                JustAddedTvShows: 'Just Added TV Shows',
                 WatchAgain: 'Watch Again',
                 PopularInLibrary: 'Popular In Your Library',
+                BecauseYouWatched: 'Because You Watched',
                 MyList: 'My List'
             };
             var allSections = Object.keys(sectionTitles);
@@ -203,6 +214,7 @@
                     document.getElementById('jhHeroSeconds').value = String(prop(config, 'HeroRotationSeconds') || 8);
                     document.getElementById('jhItemsPerRow').value = String(prop(config, 'ItemsPerRow') || 20);
                     document.getElementById('jhRefreshHours').value = String(prop(config, 'RecommendationRefreshHours') || 6);
+                    document.getElementById('jhBecauseYouWatchedRows').value = String(prop(config, 'MaxBecauseYouWatchedRows') || 3);
                     buildSectionList(prop(config, 'DefaultSectionOrder'), prop(config, 'DefaultDisabledSections'));
                     Dashboard.hideLoadingMsg();
                 });
@@ -219,6 +231,7 @@
                     HeroRotationSeconds: parseInt(document.getElementById('jhHeroSeconds').value, 10),
                     ItemsPerRow: Math.min(40, Math.max(1, parseInt(document.getElementById('jhItemsPerRow').value, 10) || 20)),
                     RecommendationRefreshHours: parseInt(document.getElementById('jhRefreshHours').value, 10),
+                    MaxBecauseYouWatchedRows: parseInt(document.getElementById('jhBecauseYouWatchedRows').value, 10),
                     DefaultSectionOrder: items.map(function (li) { return li.dataset.section; }),
                     DefaultDisabledSections: items
                         .filter(function (li) { return !li.querySelector('input[type=checkbox]').checked; })

@@ -197,6 +197,9 @@ public class AdminConfigDto
     /// <summary>Gets or sets the recommendation refresh interval in hours.</summary>
     public int RecommendationRefreshHours { get; set; } = 6;
 
+    /// <summary>Gets or sets the maximum number of "Because You Watched" rows.</summary>
+    public int MaxBecauseYouWatchedRows { get; set; } = 3;
+
     /// <summary>Gets or sets the server-wide default section order.</summary>
     public string[] DefaultSectionOrder { get; set; } = Array.Empty<string>();
 

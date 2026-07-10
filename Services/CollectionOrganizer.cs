@@ -146,6 +146,58 @@ public class CollectionOrganizer
     }
 
     /// <summary>
+    /// Deletes every JuddHome-managed studio collection (identified by the
+    /// <see cref="StudioProviderIdKey"/> marker) — a one-time cleanup for when the
+    /// grouping turned out too broad. Only ever touches collections it created
+    /// itself; never touches the underlying movies/shows, or any collection made
+    /// by the user or anything else.
+    /// </summary>
+    /// <param name="progress">Progress reporter (0–100).</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A task representing the run.</returns>
+    public Task RemoveStudioCollectionsAsync(IProgress<double> progress, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var collections = _libraryManager.GetItemList(new InternalItemsQuery
+            {
+                IncludeItemTypes = new[] { BaseItemKind.BoxSet },
+                Recursive = true
+            }).Where(c => c.ProviderIds.ContainsKey(StudioProviderIdKey)).ToList();
+
+            var processed = 0;
+            foreach (var collection in collections)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                try
+                {
+                    _libraryManager.DeleteItem(collection, new DeleteOptions { DeleteFileLocation = false });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "JuddHome: failed to remove studio collection {Name}", collection.Name);
+                }
+
+                processed++;
+                progress.Report(collections.Count == 0 ? 100 : processed * 100.0 / collections.Count);
+            }
+
+            _logger.LogInformation("JuddHome: removed {Count} JuddHome-managed studio collections", collections.Count);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "JuddHome: removing studio collections failed");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
     /// Gets every Collection (BoxSet) in the library as a row, regardless of what
     /// created it — JuddHome's own Studio Collections, manually-created ones, or
     /// anything else. Alphabetical by collection name; empty collections are skipped.

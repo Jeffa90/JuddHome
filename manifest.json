@@ -8,6 +8,14 @@
     "category": "General",
     "versions": [
       {
+        "version": "1.0.8.0",
+        "changelog": "Removes the studio Collections auto-grouping (was sweeping nearly every movie into a collection) and adds a one-time 'Remove Studio Collections (JuddHome, one-time cleanup)' scheduled task (Dashboard > Scheduled Tasks, Run Now) to delete the ones it already made, without touching your movies/shows or any other collection. Adds a 'Because You Watched: max rows' setting (1-5, default 3) in Settings, and moves it near the bottom of the default section order. Also fixes the admin Settings page, which was missing Just Added Movies/TV Shows entirely (added in 1.0.6.0 but never wired into the settings page) — they're now visible and reorderable there too.",
+        "targetAbi": "10.11.11.0",
+        "sourceUrl": "https://raw.githubusercontent.com/Jeffa90/JuddHome/main/dist/juddhome_1.0.8.0.zip",
+        "checksum": "1b5884cf953e85e1ee4f8930a59da31a",
+        "timestamp": "2026-07-04T00:00:00Z"
+      },
+      {
         "version": "1.0.7.0",
         "changelog": "Fixes a caching bug that has silently affected every release since 1.0.1.0: the injected home screen <script> tag never changed its URL between versions, so browsers and TV apps kept serving whatever home.js/home.css/home.html they first loaded and never picked up later client-side fixes (including the Tizen fetch() fix and the 1.0.6.0 Collections/Genres/Decades tabs). The script tag now carries a ?v=<version> marker that changes on every update, and the asset endpoint now sends Cache-Control: no-store. If the home screen still looks unchanged after updating to this version, a hard refresh (or clearing the browser/app cache once) should finally pick up everything from 1.0.2.0 through 1.0.6.0 that got stuck.",
         "targetAbi": "10.11.11.0",

@@ -17,7 +17,6 @@ public class PluginConfiguration : BasePluginConfiguration
         SectionTypes.HeroBanner,
         SectionTypes.ContinueWatching,
         SectionTypes.NextUp,
-        SectionTypes.BecauseYouWatched,
         SectionTypes.RecommendedForYou,
         SectionTypes.LatestMovies,
         SectionTypes.LatestTvShows,
@@ -25,6 +24,7 @@ public class PluginConfiguration : BasePluginConfiguration
         SectionTypes.JustAddedTvShows,
         SectionTypes.WatchAgain,
         SectionTypes.PopularInLibrary,
+        SectionTypes.BecauseYouWatched,
         SectionTypes.MyList
     };
 
@@ -47,6 +47,13 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets the recommendation profile refresh interval in hours (1 / 3 / 6 / 12 / 24).
     /// </summary>
     public int RecommendationRefreshHours { get; set; } = 6;
+
+    /// <summary>
+    /// Gets or sets the maximum number of "Because You Watched" rows (1–5, default 3).
+    /// One row is produced per recently-watched title, so this caps how many can
+    /// pile up as people watch more.
+    /// </summary>
+    public int MaxBecauseYouWatchedRows { get; set; } = 3;
 
     /// <summary>
     /// Gets or sets the recommendation weight for genre match (default 0.40).
